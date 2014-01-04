@@ -1,0 +1,123 @@
+Basic Components
+===============================================================================
+
+Sinatra
+  Request < Rack::Request
+  Response < Rack::Response
+  ExtendedRack -> setup_close, after_response, async?
+  CommonLogger < Rack::CommonLogger
+  NotFound < NameError
+  Base
+    has methods that are the core.
+    set
+    enable
+    disable
+
+
+
+module Helpers
+  status
+  body
+  redirect
+  url, uri
+  error
+  not_found
+  headers
+  session
+  logger
+  mome_type
+  content_type
+  attachment
+  Stream
+
+module Templates
+  erb
+  haml
+  ..
+
+
+===============================================================================
+Extending Sinatra
+===============================================================================
+
+1. Two kinds of extending Sinatra's functionality
+   a. Extensions
+   b. Helpers
+   c. Middleware
+2. Helpers can be used if the functionality is 
+required inside a route block.
+3. Extensions can be used if functionality is required outside a route block.
+4. Middleware if you want to intercept a request after sinatra has
+processed/before it processes it. ( not discuessed )
+
+
+
+
+===============================================================================
+Helpers
+===============================================================================
+
+For example, if we wanted
+
+    get '/' do
+      a = { resp: "Hello World" }
+      json(a)
+    end
+
+To do this, you'd do:
+
+(Inside the app.rb)
+
+    module Helpers
+      def json(hash)
+        Oj.dump hash
+      end
+    end
+
+and in your appfile,
+
+    include Helpers
+    get '/' do ...
+
+-------------------------------------------------------------------------------
+But how do I gem it?
+-------------------------------------------------------------------------------
+
+    module Sinatra
+      module JsonHelper
+        def json(hash)
+          Oj.dump hash
+        end
+      end
+
+      Base.helpers JsonHelper
+      Base.set :json_content_type, :json
+    end
+
+* Incase of helpers, there is no distinction between a modular app and a
+classic app since those helpers are available only inside a route.
+
+===============================================================================
+Extensions
+===============================================================================
+Background: get, post, etc. are all class 
+methods on Base. So, we need to
+`extend` the methods that we define.
+
+For extensions, Sinatra provides a method called register. You "register" a
+module either by passing the name to it or by defining functionality in a
+block
+
+    def register(*extensions, &block)
+      @extensions += extensions
+      extensions.each do |extension|
+        extend extension
+        extension.registered(self) if extension.repond_to?(:registered)
+      end
+    end
+
+
+===============================================================================
+Middlewares
+===============================================================================
+- Any rack compatible middleware can be used. Example: Omniauth
